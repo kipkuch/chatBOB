@@ -1,6 +1,8 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { GoogleGenAI } from '@google/genai';
+import { environment } from '../environments/environment';
 
 @Component({
   selector: 'app-root',
@@ -28,6 +30,12 @@ import { FormsModule } from '@angular/forms';
       </div>
       <div class="search-buttons">
         <button (click)="onSearch()">Ask</button>
+      </div>
+
+      <!-- Add this new response section -->
+      <div *ngIf="aiResponse">
+        <h3>AI Response:</h3>
+        <p>{{ aiResponse }}</p>
       </div>
     </div>
   `,
@@ -147,11 +155,32 @@ import { FormsModule } from '@angular/forms';
 })
 export class AppComponent {
   searchQuery: string = '';
+  aiResponse: string = '';
 
-  onSearch() {
-    if (this.searchQuery.trim()) {
-      console.log('Searching for:', this.searchQuery);
-      // Add your search logic here
-    }
+  ai = new GoogleGenAI({apiKey: environment.GEMINI_API_KEY});
+
+  async onSearch() {
+    //const result = await this.ai.models.generateContent({
+    //  model: 'gemini-2.5-flash',
+    //  contents: this.searchQuery
+    //});
+    this.aiResponse = `The number of tomatoes that can fit in a 700ml jar depends heavily on **the size of the tomatoes** and **how they are packed**.
+
+Here's a breakdown by tomato type:
+
+1.  **Cherry/Grape Tomatoes (small):**
+    *   These are typically 15-25 ml each.
+    *   You might fit anywhere from **25 to 45** cherry tomatoes, depending on their exact size and how tightly you pack them (there will be some air gaps).
+
+2.  **Roma/Plum Tomatoes (medium):**
+    *   These are typically 60-100 ml each.
+    *   You might fit **7 to 12** Roma tomatoes, again, depending on their size and packing.
+
+3.  **Standard Slicing Tomatoes (large):**
+    *   These can be 150-250 ml or even more.
+    *   You would likely only fit **2 to 4** large tomatoes, and they might need to be squished or cut to fit efficiently.
+
+**In summary, without knowing the specific size of the tomatoes, it's impossible to give an exact number, but the range is quite broad, from 2-4 large tomatoes to 45+ small ones.**`//result.text ?? '';
+    console.log(this.aiResponse);
   }
 }
