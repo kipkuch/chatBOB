@@ -1,1 +1,20 @@
 /* You can add global styles to this file, and also import other style files */
+.upload-icon {
+  width: 24px;
+  height: 24px;
+  color: #9aa0a6;
+  margin-left: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.upload-icon:hover {
+  color: #5f6368;
+}
+
+.hidden-file-input {
+  display: none;
+}

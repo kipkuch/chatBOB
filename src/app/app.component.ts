@@ -1,8 +1,10 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { GoogleGenAI } from '@google/genai';
+import { createPartFromBase64, createPartFromUri, createUserContent, GoogleGenAI } from '@google/genai';
 import { environment } from '../environments/environment';
+
+ 
 
 @Component({
   selector: 'app-root',
@@ -27,6 +29,13 @@ import { environment } from '../environments/environment';
           placeholder="Ask me anything"
           #searchInput
         >
+        <div class="upload-icon" (click)="fileInput.click()" role="button" tabindex="0" aria-label="Upload image" (keyup.enter)="fileInput.click()">
+          <svg focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"></path>
+          </svg>
+        </div>
+        <input type="file" class="hidden-file-input" accept="image/*" #fileInput (change)="onImageSelected($event)">
+
       </div>
       <div class="search-buttons">
         <button (click)="onSearch()">Ask</button>
@@ -159,28 +168,58 @@ export class AppComponent {
 
   ai = new GoogleGenAI({apiKey: environment.GEMINI_API_KEY});
 
-  async onSearch() {
-    //const result = await this.ai.models.generateContent({
-    //  model: 'gemini-2.5-flash',
-    //  contents: this.searchQuery
-    //});
-    this.aiResponse = `The number of tomatoes that can fit in a 700ml jar depends heavily on **the size of the tomatoes** and **how they are packed**.
+  selectedBase64String: string | null = null;
+  selectedMimeType: string | null = null;
+ 
 
-Here's a breakdown by tomato type:
+  onImageSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files && input.files.length ? input.files[0] : null;
 
-1.  **Cherry/Grape Tomatoes (small):**
-    *   These are typically 15-25 ml each.
-    *   You might fit anywhere from **25 to 45** cherry tomatoes, depending on their exact size and how tightly you pack them (there will be some air gaps).
+    const reader = new FileReader();
+    
+    reader.onload = () => {
+      const result = reader.result as string;
 
-2.  **Roma/Plum Tomatoes (medium):**
-    *   These are typically 60-100 ml each.
-    *   You might fit **7 to 12** Roma tomatoes, again, depending on their size and packing.
+      // Extract MIME type and Base64 content
+      const [prefix, base64] = result.split(',');
+      const mimeMatch = prefix.match(/data:(.*);base64/);
 
-3.  **Standard Slicing Tomatoes (large):**
-    *   These can be 150-250 ml or even more.
-    *   You would likely only fit **2 to 4** large tomatoes, and they might need to be squished or cut to fit efficiently.
+      if (mimeMatch && base64) {
+        this.selectedMimeType = mimeMatch[1]; // e.g., image/png
+        this.selectedBase64String = base64;   // pure Base64 string
+      } else {
+        console.error('Invalid Base64 format');
+      }
 
-**In summary, without knowing the specific size of the tomatoes, it's impossible to give an exact number, but the range is quite broad, from 2-4 large tomatoes to 45+ small ones.**`//result.text ?? '';
-    console.log(this.aiResponse);
+      console.log('Base64 Image:', this.selectedBase64String);
+    };
+
+    reader.onerror = (error) => {
+      console.error('Error reading file:', error);
+    };
+
+    reader.readAsDataURL(file!); // This converts the file to base64
   }
+
+  async onSearch() {
+
+    const contents = createUserContent([
+        createPartFromBase64(this.selectedBase64String!,this.selectedMimeType!),
+        this.searchQuery]);
+
+    const result = await this.ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: contents,
+      config: {
+        systemInstruction: 'You are a helpful assistant only answering questions about bicycles. \
+         Keep the responses short and concise. Not more than 4 sentences',
+        maxOutputTokens: 4096,
+        temperature: 2.0,
+      }
+    });
+    
+    this.aiResponse = result.text ?? ''
+    console.log(this.aiResponse);
+  }    
 }
