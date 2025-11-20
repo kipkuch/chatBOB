@@ -37,6 +37,10 @@ import { environment } from '../environments/environment';
         <input type="file" class="hidden-file-input" accept="image/*" #fileInput (change)="onImageSelected($event)">
 
       </div>
+      <div class="image-preview" *ngIf="selectedBase64String">
+        <h3>Image Preview:</h3>
+        <img [src]="'data:' + selectedMimeType + ';base64,' + selectedBase64String" alt="Uploaded Image" class="preview-image">
+      </div>
       <div class="search-buttons">
         <button (click)="onSearch()">Ask</button>
       </div>
@@ -160,6 +164,19 @@ import { environment } from '../environments/environment';
       border-color: #1557b0;
       box-shadow: 0 1px 2px 0 rgba(66, 133, 244, 0.3), 0 1px 3px 1px rgba(66, 133, 244, 0.15);
     }
+
+    .image-preview {
+      margin-top: 16px;
+      text-align: center;
+    }
+
+    .preview-image {
+      max-width: 100%;
+      max-height: 300px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
   `]
 })
 export class AppComponent {
@@ -175,13 +192,12 @@ export class AppComponent {
   onImageSelected(event: Event) {
     const input = event.target as HTMLInputElement;
     const file = input.files && input.files.length ? input.files[0] : null;
-
     const reader = new FileReader();
-    
+
     reader.onload = () => {
       const result = reader.result as string;
 
-      // Extract MIME type and Base64 content
+      // Extract MIME type and Base64 content. 
       const [prefix, base64] = result.split(',');
       const mimeMatch = prefix.match(/data:(.*);base64/);
 
@@ -192,7 +208,7 @@ export class AppComponent {
         console.error('Invalid Base64 format');
       }
 
-      console.log('Base64 Image:', this.selectedBase64String);
+      console.log('Base64 Image:', this.selectedBase64String); //for debugging
     };
 
     reader.onerror = (error) => {
@@ -204,10 +220,12 @@ export class AppComponent {
 
   async onSearch() {
 
+    //build the content using the image and text query
     const contents = createUserContent([
         createPartFromBase64(this.selectedBase64String!,this.selectedMimeType!),
         this.searchQuery]);
 
+    //call the generate content method
     const result = await this.ai.models.generateContent({
       model: 'gemini-2.5-flash',
       contents: contents,
@@ -221,5 +239,5 @@ export class AppComponent {
     
     this.aiResponse = result.text ?? ''
     console.log(this.aiResponse);
-  }    
+  }
 }
